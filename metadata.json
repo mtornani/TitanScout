@@ -1,0 +1,5 @@
+{
+  "name": "FSGC Titan Scout",
+  "description": "A specialized AI scouting tool for the San Marino Football Federation to identify eligible players (oriundi) worldwide using Gemini and Google Search grounding.",
+  "requestFramePermissions": []
+}
