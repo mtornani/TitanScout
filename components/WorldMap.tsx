@@ -1,23 +1,22 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Player } from '../types';
 import { COUNTRY_COORDINATES } from '../constants';
-import { MapPin } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface WorldMapProps {
   players: Player[];
+  lowFx: boolean;
 }
 
-export const WorldMap: React.FC<WorldMapProps> = ({ players }) => {
+export const WorldMap: React.FC<WorldMapProps> = ({ players, lowFx }) => {
+  const [activeCountry, setActiveCountry] = useState<string | null>(null);
   
   const getCoordinates = (countryName: string) => {
-    // Normalize standard names
     const normalized = countryName.trim();
-    // Simple lookup, fallback to Atlantic Ocean if unknown
     return COUNTRY_COORDINATES[normalized] || COUNTRY_COORDINATES['Unknown'];
   };
 
-  // Group players by country to avoid overlapping pins too much
   const playersByCountry = players.reduce((acc, player) => {
     const c = player.country.trim();
     if (!acc[c]) acc[c] = [];
@@ -25,79 +24,109 @@ export const WorldMap: React.FC<WorldMapProps> = ({ players }) => {
     return acc;
   }, {} as Record<string, Player[]>);
 
+  const handlePinClick = (e: React.MouseEvent, country: string) => {
+    e.stopPropagation();
+    if (activeCountry === country) {
+      setActiveCountry(null);
+    } else {
+      setActiveCountry(country);
+    }
+  };
+
   return (
-    <div className="w-full h-full min-h-[400px] bg-[#0B1221] rounded-xl border border-fsgc-blue/20 relative overflow-hidden group">
-      {/* Grid Background */}
-      <div className="absolute inset-0 opacity-20" 
-           style={{backgroundImage: 'linear-gradient(#1e293b 1px, transparent 1px), linear-gradient(90deg, #1e293b 1px, transparent 1px)', backgroundSize: '40px 40px'}}>
-      </div>
-
-      {/* SVG World Map (Simplified Path) */}
-      <svg 
-        viewBox="0 0 1000 500" 
-        className="absolute inset-0 w-full h-full text-fsgc-panel fill-current opacity-50 pointer-events-none"
-      >
-         {/* Simplified World Map Path */}
-         <path d="M200,150 Q250,100 300,150 T400,200 T500,150 T600,100 T700,150 T800,200 T900,300 L800,400 L200,400 Z" style={{display: 'none'}} /> 
-         {/* 
-           Since I cannot include a 100KB SVG path here, we rely on the visual coordinate placement. 
-           The background grid and "Radar" effect gives the context.
-         */}
-         <rect width="100%" height="100%" fill="transparent" />
-         
-         {/* Radar Sweep Effect */}
-         <circle cx="500" cy="250" r="0" className="animate-[ping_3s_linear_infinite] stroke-fsgc-blue opacity-10" fill="none" strokeWidth="2" />
-      </svg>
+    <div className="w-full h-full min-h-[400px] bg-[#0B1221] rounded-xl border border-fsgc-blue/20 relative flex flex-col overflow-hidden group" onClick={() => setActiveCountry(null)}>
       
-      {/* Aesthetic World Map Background Image Replacement (CSS Shapes) */}
-      <div className="absolute inset-0 opacity-30 pointer-events-none">
-         {/* North America */}
-         <div className="absolute top-[15%] left-[10%] w-[25%] h-[35%] bg-slate-600 rounded-full blur-2xl"></div>
-         {/* South America */}
-         <div className="absolute top-[55%] left-[25%] w-[15%] h-[35%] bg-slate-600 rounded-full blur-2xl"></div>
-         {/* Europe/Africa */}
-         <div className="absolute top-[20%] left-[45%] w-[20%] h-[50%] bg-slate-600 rounded-full blur-2xl"></div>
-         {/* Asia */}
-         <div className="absolute top-[15%] left-[65%] w-[30%] h-[40%] bg-slate-600 rounded-full blur-2xl"></div>
-         {/* Australia */}
-         <div className="absolute top-[65%] left-[80%] w-[15%] h-[20%] bg-slate-600 rounded-full blur-2xl"></div>
+      {/* Mobile Swipe Hint - Hide on Low FX to save paint */}
+      <div className="absolute top-4 right-4 z-20 lg:hidden pointer-events-none opacity-50">
+        <span className="text-[10px] bg-fsgc-darker/80 text-slate-400 px-2 py-1 rounded border border-white/10">
+          ↔ Swipe / Tap Pins
+        </span>
       </div>
 
-      {/* Pins */}
-      {Object.entries(playersByCountry).map(([country, countryPlayers]) => {
-        const coords = getCoordinates(country);
-        return (
-          <div 
-            key={country}
-            className="absolute group/pin hover:z-50 cursor-pointer"
-            style={{ top: `${coords.y}%`, left: `${coords.x}%` }}
-          >
-            {/* Ripple */}
-            <div className="absolute -top-2 -left-2 w-8 h-8 bg-fsgc-blue/30 rounded-full animate-ping"></div>
+      {/* Scrollable Container for Mobile */}
+      <div className="flex-1 overflow-x-auto overflow-y-hidden relative no-scrollbar touch-pan-x">
+        {/* Inner constrained width container */}
+        <div className="min-w-[800px] h-full relative">
             
-            {/* Pin Point */}
-            <div className="relative w-4 h-4 bg-fsgc-blue border-2 border-white rounded-full shadow-[0_0_10px_#009EE3] flex items-center justify-center">
-                <span className="text-[8px] font-bold text-fsgc-darker">{countryPlayers.length}</span>
+            {/* Grid Background */}
+            <div className="absolute inset-0 opacity-20" 
+                style={{backgroundImage: 'linear-gradient(#1e293b 1px, transparent 1px), linear-gradient(90deg, #1e293b 1px, transparent 1px)', backgroundSize: '40px 40px'}}>
             </div>
 
-            {/* Tooltip */}
-            <div className="absolute top-6 left-1/2 -translate-x-1/2 w-48 bg-fsgc-darker/90 backdrop-blur border border-fsgc-blue/30 p-2 rounded hidden group-hover/pin:block z-50 shadow-xl">
-                <div className="text-xs font-bold text-fsgc-blue uppercase mb-1 border-b border-white/10 pb-1">{country}</div>
-                <div className="space-y-1">
-                    {countryPlayers.map((p, i) => (
-                        <div key={i} className="text-[10px] text-slate-300 flex justify-between">
-                            <span className="truncate max-w-[80px]">{p.name}</span>
-                            <span className="text-slate-500">{p.club}</span>
-                        </div>
-                    ))}
+            {/* Aesthetic CSS World Shapes - DISABLED IN LOW FX */}
+            {!lowFx && (
+                <div className="absolute inset-0 opacity-30 pointer-events-none">
+                    <div className="absolute top-[15%] left-[10%] w-[25%] h-[35%] bg-slate-600 rounded-full blur-3xl"></div>
+                    <div className="absolute top-[55%] left-[25%] w-[15%] h-[35%] bg-slate-600 rounded-full blur-3xl"></div>
+                    <div className="absolute top-[20%] left-[45%] w-[20%] h-[50%] bg-slate-600 rounded-full blur-3xl"></div>
+                    <div className="absolute top-[15%] left-[65%] w-[30%] h-[40%] bg-slate-600 rounded-full blur-3xl"></div>
+                    <div className="absolute top-[65%] left-[80%] w-[15%] h-[20%] bg-slate-600 rounded-full blur-3xl"></div>
                 </div>
-            </div>
-          </div>
-        );
-      })}
+            )}
+            
+            {/* Radar Sweep Effect - DISABLED IN LOW FX */}
+            {!lowFx && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+                    <div className="w-[600px] h-[600px] rounded-full border border-fsgc-blue/5 animate-[ping_4s_linear_infinite]"></div>
+                </div>
+            )}
+
+            {/* Pins */}
+            {(Object.entries(playersByCountry) as [string, Player[]][]).map(([country, countryPlayers]) => {
+                const coords = getCoordinates(country);
+                const isActive = activeCountry === country;
+
+                return (
+                <div 
+                    key={country}
+                    className={`absolute transition-all duration-300 cursor-pointer ${isActive ? 'z-50 scale-110' : 'z-10 hover:z-40 hover:scale-110'}`}
+                    style={{ top: `${coords.y}%`, left: `${coords.x}%` }}
+                    onClick={(e) => handlePinClick(e, country)}
+                >
+                    {/* Ripple - Remove animations in Low FX */}
+                    <div className={`absolute -top-2 -left-2 w-8 h-8 bg-fsgc-blue/30 rounded-full ${!lowFx && (isActive ? 'animate-pulse' : 'animate-ping')}`}></div>
+                    
+                    {/* Pin Point */}
+                    <div className={`relative w-4 h-4 border-2 rounded-full ${lowFx ? '' : 'shadow-[0_0_10px_#009EE3]'} flex items-center justify-center transition-colors ${isActive ? 'bg-white border-fsgc-blue' : 'bg-fsgc-blue border-white'}`}>
+                        <span className={`text-[8px] font-bold ${isActive ? 'text-fsgc-blue' : 'text-fsgc-darker'}`}>{countryPlayers.length}</span>
+                    </div>
+
+                    {/* Tooltip */}
+                    <div className={`
+                        absolute top-6 left-1/2 -translate-x-1/2 w-56 
+                        bg-fsgc-darker/95 border border-fsgc-blue/40 
+                        p-3 rounded-lg 
+                        transition-all duration-200 origin-top
+                        ${!lowFx ? 'backdrop-blur-md shadow-2xl' : ''}
+                        ${isActive ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible lg:group-hover:opacity-100 lg:group-hover:scale-100 lg:group-hover:visible'}
+                    `}>
+                        <div className="flex justify-between items-start mb-2 border-b border-white/10 pb-2">
+                            <span className="text-xs font-bold text-fsgc-blue uppercase tracking-wider">{country}</span>
+                            {isActive && (
+                                <button onClick={(e) => { e.stopPropagation(); setActiveCountry(null); }} className="text-slate-500 hover:text-white">
+                                    <X size={12} />
+                                </button>
+                            )}
+                        </div>
+                        <div className="max-h-32 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-white/20">
+                            {countryPlayers.map((p, i) => (
+                                <div key={i} className="text-xs group/item">
+                                    <div className="font-bold text-slate-200 truncate">{p.name}</div>
+                                    <div className="text-[10px] text-slate-400 flex justify-between items-center">
+                                        <span>{p.club}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                );
+            })}
+        </div>
+      </div>
       
-      <div className="absolute bottom-4 left-4 text-[10px] font-mono text-fsgc-blue/60">
-        GLOBAL POSITIONING SYSTEM // ACTIVE
+      <div className="absolute bottom-4 left-4 text-[10px] font-mono text-fsgc-blue/60 pointer-events-none">
+        GPS TRACKING // ACTIVE // {Object.keys(playersByCountry).length} REGIONS
       </div>
     </div>
   );

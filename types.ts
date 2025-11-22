@@ -1,12 +1,18 @@
 
 export interface Player {
+  id: string;
   name: string;
   club: string;
+  league?: string;
+  position?: string;
+  citizenship?: string;
   year_born: string | number;
   country: string;
   reasoning: string;
   source_url: string;
-  found_via: string;
+  image_url?: string;
+  verified: boolean;
+  discovery_method: 'GRAPH' | 'TEXT'; // New field to track source
 }
 
 export interface LogMessage {
@@ -16,17 +22,12 @@ export interface LogMessage {
   text: string;
 }
 
-export enum SearchStrategy {
-  SURNAME_BASE = 'SURNAME_BASE',
-  ARGENTINA = 'ARGENTINA',
-  USA_COLLEGE = 'USA_COLLEGE',
-  TRANSFERMARKT = 'TRANSFERMARKT',
-  DISCOVERY = 'DISCOVERY',
-  GLOBAL_SCOUT = 'GLOBAL_SCOUT',
-  FULL_SCAN = 'FULL_SCAN'
+export enum DataSource {
+  WIKIDATA_LIVE = 'WIKIDATA_LIVE',
+  MANUAL_DORK = 'MANUAL_DORK'
 }
 
 export interface ScoutingConfig {
-  strategy: SearchStrategy;
-  delayMs: number;
+  minAge: number;
+  maxAge: number;
 }

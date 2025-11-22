@@ -1,12 +1,14 @@
+
 import React, { useEffect, useRef } from 'react';
 import { LogMessage } from '../types';
 import { Terminal } from 'lucide-react';
 
 interface ConsoleProps {
   logs: LogMessage[];
+  lowFx?: boolean;
 }
 
-export const Console: React.FC<ConsoleProps> = ({ logs }) => {
+export const Console: React.FC<ConsoleProps> = ({ logs, lowFx }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -14,7 +16,7 @@ export const Console: React.FC<ConsoleProps> = ({ logs }) => {
   }, [logs]);
 
   return (
-    <div className="bg-black/40 border border-fsgc-blue/20 rounded-lg flex flex-col h-full overflow-hidden backdrop-blur-sm">
+    <div className={`bg-black/40 border border-fsgc-blue/20 rounded-lg flex flex-col h-full overflow-hidden ${lowFx ? '' : 'backdrop-blur-sm'}`}>
       <div className="bg-fsgc-blue/5 px-3 py-2 border-b border-fsgc-blue/10 flex items-center gap-2">
         <Terminal size={14} className="text-fsgc-blue" />
         <span className="text-xs font-mono font-bold text-fsgc-blue uppercase">Live Operation Log</span>
